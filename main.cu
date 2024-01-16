@@ -25,17 +25,8 @@ int main(int argc, char** argv) {
     thrust::device_vector<double> local_buffer = host_local_buffer;
     thrust::device_vector<double> shared_buffer = host_shared_buffer;
 
-    double* dummy;
-    cudaMalloc(&dummy, 1);
-
-    MPI_Win win;
-    MPI_Win_create(dummy, 0, sizeof(double),
-        MPI_INFO_NULL, comm, &win);
-
-    MPI_Win_fence(0, win);
-    //MPI_Put(local_buffer.data().get(), local_buffer.size(), MPI_DOUBLE, 0,
-//        rank * local_buffer.size(), local_buffer.size(),  MPI_DOUBLE, win);
-    MPI_Win_fence(0, win);
+    MPI_Gather(local_buffer.data().get(), local_buffer.size(), MPI_DOUBLE,
+               shared_buffer.data().get(), local_buffer.size(), MPI_DOUBLE, 0, comm);
 
     host_shared_buffer = shared_buffer;
     if(rank == 0) {
@@ -48,8 +39,6 @@ int main(int argc, char** argv) {
     MPI_Barrier(comm);
 
     std::cout << host_shared_buffer.size() << std::endl;
-
-    cudaFree(dummy);
 
     MPI_Finalize();
 }
